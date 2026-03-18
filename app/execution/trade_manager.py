@@ -48,7 +48,7 @@ class TradeManager:
                     "strategy": signal.indicators.get("strategy", "unknown"),
                     "regime": signal.regime.value
                 }
-                await self.repository.save_new_trade(trade_data)
+                await self.repository.save_trade(trade_data)
                 self._open_positions[pos.id] = pos
                 return True
             except Exception as e:

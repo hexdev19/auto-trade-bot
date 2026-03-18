@@ -19,7 +19,6 @@ class Backtester:
         self.risk_engine = RiskEngine()
 
     async def load_data(self, client: BinanceSpotClient, symbol: str, start: str, end: str, interval: str = "1m") -> List[Candle]:
-        # Using a higher-level client method or raw AsyncClient
         klines = await client._client.get_historical_klines(symbol, interval, start, end)
         return [
             Candle(
@@ -39,7 +38,6 @@ class Backtester:
         active_pos: Optional[OpenPosition] = None
         closed_trades: List[ClosedTrade] = []
         
-        # Buffer for indicators
         history: List[Candle] = []
         
         for i in range(100, len(candles) - 1):
@@ -51,7 +49,6 @@ class Backtester:
             self.router.update_regime(regime)
             
             if active_pos:
-                # Monitor SL/TP
                 low, high = current.low, current.high
                 triggered = False
                 exit_price = Decimal('0')
@@ -73,7 +70,6 @@ class Backtester:
                         triggered, reason = True, "TP"
                         
                 if triggered:
-                    # Apply slippage to exit
                     exit_price = exit_price * (1 - self.slippage) if active_pos.side == TradingSide.BUY else exit_price * (1 + self.slippage)
                     pnl = (exit_price - active_pos.entry_price) * active_pos.quantity if active_pos.side == TradingSide.BUY else (active_pos.entry_price - exit_price) * active_pos.quantity
                     fee_val = exit_price * active_pos.quantity * self.fee
@@ -90,16 +86,13 @@ class Backtester:
                     active_pos = None
                     continue
 
-            # Entry Logic
             if not active_pos and not self.router.is_trading_paused():
                 strategy = self.router.get_active_strategy()
                 signal = asyncio.run(strategy.generate_signal(history[-100:], [], {}, regime, None))
                 
                 if signal:
-                    # Risk validation (mocked for backtest)
-                    decision = asyncio.run(self.risk_engine.validate_trade(signal, balance, Decimal('0'))) # Simplified daily pnl
+                    decision = asyncio.run(self.risk_engine.validate_trade(signal, balance, Decimal('0')))
                     if decision.status == RiskStatus.APPROVED:
-                        # Simulate fill at NEXT candle open
                         fill_price = next_c.open * (1 + self.slippage if signal.side == TradingSide.BUY else 1 - self.slippage)
                         qty = decision.max_quantity
                         cost = qty * fill_price

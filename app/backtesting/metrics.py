@@ -32,13 +32,11 @@ def calculate_metrics(trades: List[ClosedTrade], initial_balance: Decimal, final
     win_rate = (len(wins) / len(trades)) * 100
     profit_factor = sum(wins) / abs(sum(losses)) if losses else Decimal('0')
     
-    # Drawdown logic (simplified for trades)
     cum_pnl = np.cumsum([float(p) for p in pnls])
     peak = np.maximum.accumulate(cum_pnl)
     drawdown = (peak - cum_pnl) / (float(initial_balance) + peak)
     max_dd = np.max(drawdown) * 100
     
-    # Sharpe/Sortino (simplified)
     daily_returns = [float(p / initial_balance) for p in pnls]
     avg_ret = np.mean(daily_returns) if daily_returns else 0
     std_ret = np.std(daily_returns) if daily_returns else 1

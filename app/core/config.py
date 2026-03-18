@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: Optional[SecretStr] = None
     TELEGRAM_CHAT_ID: Optional[str] = None
 
-    DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost/trading_bot"
-    REDIS_URL: str = "redis://localhost:6379/0"
+    DATABASE_URL: str
+    REDIS_URL: str
 
     TRADING_SYMBOL: str = "BTCUSDT"
     DEFAULT_TIMEFRAME: str = "1m"

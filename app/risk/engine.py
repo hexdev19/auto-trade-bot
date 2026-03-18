@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Optional
 from datetime import datetime, timedelta
-from app.models.domain import TradeSignal, RiskDecision, RiskStatus
+from app.models.domain import TradeSignal, RiskDecision, RiskStatus, BotStatus, RiskMetrics
 from app.core.config import settings
 
 class RiskEngine:
@@ -9,6 +9,18 @@ class RiskEngine:
         self.peak_balance = Decimal('0')
         self.consecutive_losses = 0
         self.cooldown_until: Optional[datetime] = None
+        self._status = BotStatus.RUNNING
+
+    def set_status(self, status: BotStatus):
+        self._status = status
+
+    def get_metrics(self) -> RiskMetrics:
+        return RiskMetrics(
+            bot_status=self._status,
+            peak_balance=self.peak_balance,
+            consecutive_losses=self.consecutive_losses,
+            cooldown_active=bool(self.cooldown_until and datetime.utcnow() < self.cooldown_until)
+        )
 
     def _calculate_size(self, balance: Decimal, entry: Decimal, sl: Decimal) -> Decimal:
         risk = balance * settings.RISK_PER_TRADE_PCT

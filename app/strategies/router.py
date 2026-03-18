@@ -29,5 +29,8 @@ class StrategyRouter:
     def is_trading_paused(self) -> bool:
         return self._current_regime in [MarketRegime.HIGH_VOLATILITY, MarketRegime.UNKNOWN]
 
+    def get_active_regime(self) -> MarketRegime:
+        return self._current_regime
+
     def get_strategy_for_regime(self, regime: MarketRegime) -> BaseStrategy:
         return self._strategies.get(regime, self._strategies[MarketRegime.UNKNOWN])

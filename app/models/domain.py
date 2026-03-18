@@ -60,6 +60,18 @@ class ClosedTrade:
     opened_at: datetime
     closed_at: datetime = field(default_factory=datetime.utcnow)
 
+class BotStatus(str, Enum):
+    RUNNING = "RUNNING"
+    STOPPED = "STOPPED"
+    ERROR = "ERROR"
+
+@dataclass
+class RiskMetrics:
+    bot_status: BotStatus
+    peak_balance: Decimal
+    consecutive_losses: int
+    cooldown_active: bool
+
 class RiskStatus(str, Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
