@@ -6,11 +6,14 @@ from app.execution.binance_client import BinanceSpotClient
 from app.db.repository import TradingRepository
 from app.models.domain import TradeSignal, OpenPosition, ClosedTrade, TradingSide, RiskDecision
 from app.core.logging import logger
+from app.notifications.telegram import TelegramNotifier
+from app.notifications.templates import trade_closed
 
 class TradeManager:
-    def __init__(self, binance_client: BinanceSpotClient, repository: TradingRepository):
+    def __init__(self, binance_client: BinanceSpotClient, repository: TradingRepository, notifier: TelegramNotifier):
         self.binance_client = binance_client
         self.repository = repository
+        self.notifier = notifier
         self._locks: Dict[str, asyncio.Lock] = {}
         self._open_positions: Dict[str, OpenPosition] = {}
 
@@ -92,6 +95,7 @@ class TradeManager:
                     opened_at=pos.opened_at
                 )
                 self._open_positions.pop(pos_id)
+                await self.notifier.send(trade_closed(closed, "UNKNOWN", reason))
                 return closed
             except Exception as e:
                 logger.error(f"Close failed for {pos.symbol}: {e}")

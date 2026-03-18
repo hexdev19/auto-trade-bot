@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI):
     
     candle_store = CandleStore()
     repo = TradingRepository(None)
-    trade_manager = TradeManager(binance, repo)
+    trade_manager = TradeManager(binance, repo, notifier)
     position_monitor = PositionMonitor(binance, on_trigger=trade_manager.close_position)
     
     logger.info("Bot components initialized. Starting main loop task...")

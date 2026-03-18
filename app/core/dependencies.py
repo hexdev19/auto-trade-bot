@@ -84,4 +84,9 @@ async def get_repository(db: AsyncSession) -> TradingRepository:
 async def get_trade_manager() -> TradeManager:
     global _binance_client
     from app.db.session import engine 
-    return getattr(get_trade_manager, "_singleton", None)
+    singleton = getattr(get_trade_manager, "_singleton", None)
+    if singleton:
+        return singleton
+    repo = await get_repository(None)
+    notifier = await get_notifier()
+    return TradeManager(await get_binance(), repo, notifier)

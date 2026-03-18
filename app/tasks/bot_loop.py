@@ -12,7 +12,8 @@ from app.risk.engine import RiskEngine
 from app.execution.trade_manager import TradeManager
 from app.execution.position_monitor import PositionMonitor
 from app.notifications.telegram import TelegramNotifier
-from app.notifications.templates import trade_opened, regime_changed
+from app.notifications.templates import trade_opened, regime_changed, risk_alert
+from app.models.domain import BotStatus
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 async def run_bot_loop(
@@ -82,7 +83,12 @@ async def run_bot_loop(
                 
                 decision = await risk_engine.validate_trade(signal, balance, daily_pnl)
                 if decision.status != RiskStatus.APPROVED:
-                    logger.info(f"Rejected: {decision.reason}")
+                    logger.info(f"Trade blocked: {decision.reason}")
+                    metrics = risk_engine.get_metrics()
+                    if hasattr(BotStatus, 'DAILY_LIMIT_HIT') and metrics.bot_status in (BotStatus.DAILY_LIMIT_HIT, getattr(BotStatus, 'COOLING_DOWN', None), getattr(BotStatus, 'EMERGENCY_HALT', None)):
+                        await notifier.send(risk_alert(decision.reason, daily_pnl, balance))
+                    elif metrics.bot_status != BotStatus.RUNNING:
+                        await notifier.send(risk_alert(decision.reason, daily_pnl, balance))
                     continue
 
                 success = await trade_manager.try_open_position(symbol, signal, decision)
