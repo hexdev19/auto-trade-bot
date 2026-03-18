@@ -64,6 +64,7 @@ class BotStatus(str, Enum):
     RUNNING = "RUNNING"
     STOPPED = "STOPPED"
     ERROR = "ERROR"
+    PAUSED = "PAUSED"
 
 @dataclass
 class RiskMetrics:

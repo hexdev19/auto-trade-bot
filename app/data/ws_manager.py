@@ -4,9 +4,12 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from binance import BinanceSocketManager
 from app.execution.binance_client import BinanceSpotClient
-from app.models.domain import Candle, TradingSide
+from app.models.domain import Candle, TradingSide, BotStatus
 from app.core.logging import logger
 from app.core.config import settings
+from app.notifications.telegram import TelegramNotifier
+from app.risk.engine import RiskEngine
+from app.notifications.templates import emergency_halt
 
 class OrderBookStore:
     def __init__(self):
@@ -23,8 +26,10 @@ class OrderBookStore:
         return bid_vol / ask_vol if ask_vol > 0 else Decimal('1')
 
 class WebSocketManager:
-    def __init__(self, binance_client: BinanceSpotClient):
+    def __init__(self, binance_client: BinanceSpotClient, notifier: TelegramNotifier, risk_engine: RiskEngine):
         self.client = binance_client
+        self.notifier = notifier
+        self.risk_engine = risk_engine
         self._bsm = BinanceSocketManager(self.client._client)
         self.price_queue = asyncio.Queue()
         self.candle_queues: Dict[str, asyncio.Queue[Candle]] = {}
@@ -66,6 +71,10 @@ class WebSocketManager:
                 retries += 1
                 await asyncio.sleep(2 ** retries)
         logger.error(f"WS Kline {symbol} {interval} failed permanently")
+        self.risk_engine.set_status(BotStatus.PAUSED)
+        await self.notifier.send(emergency_halt("WebSocket stream permanently disconnected. Bot paused. Manual restart required."))
+        await self.candle_queues[f"{symbol}_{interval}"].put(None)
+        return
 
     async def _stream_depth(self, symbol: str):
         retries = 0

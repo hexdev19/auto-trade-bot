@@ -23,7 +23,11 @@ class TradeManager:
         async with lock:
             if any(p.symbol == symbol for p in self._open_positions.values()): return False
             try:
-                order = await self.binance_client.create_market_order(symbol, signal.side, risk.max_quantity)
+                if signal.side == TradingSide.BUY:
+                    order = await self.binance_client.place_market_buy(symbol, risk.max_quantity)
+                else:
+                    order = await self.binance_client.place_market_sell(symbol, risk.max_quantity)
+                
                 entry_price = Decimal(str(order["fills"][0]["price"]))
                 pos = OpenPosition(
                     id=order["clientOrderId"],
@@ -62,9 +66,12 @@ class TradeManager:
         lock = self._get_lock(pos.symbol)
         async with lock:
             if pos_id not in self._open_positions: return None
-            side = TradingSide.SELL if pos.side == TradingSide.BUY else TradingSide.BUY
             try:
-                order = await self.binance_client.create_market_order(pos.symbol, side, pos.quantity)
+                if pos.side == TradingSide.BUY:
+                    order = await self.binance_client.place_market_sell(pos.symbol, pos.quantity)
+                else:
+                    order = await self.binance_client.place_market_buy(pos.symbol, pos.quantity)
+                
                 exit_price = Decimal(str(order["fills"][0]["price"]))
                 pnl = (exit_price - pos.entry_price) * pos.quantity if pos.side == TradingSide.BUY else (pos.entry_price - exit_price) * pos.quantity
                 pnl_pct = (pnl / (pos.entry_price * pos.quantity)) * 100 if pos.entry_price > 0 else Decimal('0')

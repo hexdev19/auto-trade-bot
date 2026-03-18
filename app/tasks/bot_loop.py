@@ -32,6 +32,9 @@ async def run_bot_loop(
     while True:
         try:
             candle = await ws_manager.candle_queues[f"{symbol}_1m"].get()
+            if candle is None:
+                logger.error("Received permanent failure sentinel from ws_manager. Halting bot loop.")
+                break
             candle_store.append(candle, "1m")
             
             while not ws_manager.candle_queues[f"{symbol}_5m"].empty():

@@ -6,44 +6,71 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 
 from app.core.config import settings
-from app.core.logging import setup_logging
+from app.core.logging import setup_logging, logger
 from app.api.v1.routes import bot, trades, health
-from app.db.session import engine, Base
-from app.core.dependencies import get_binance, get_redis, get_trade_manager, get_risk_engine, get_repository
-from app.tasks.bot_loop import TradingBotLoop
+from app.db.session import engine, Base, AsyncSessionLocal
+from app.core.dependencies import (
+    get_binance,
+    get_risk_engine,
+    get_notifier,
+    get_ws_manager,
+    get_regime_engine,
+    get_strategy_router
+)
+from app.tasks.bot_loop import run_bot_loop
+from app.data.candle_store import CandleStore
+from app.execution.trade_manager import TradeManager
+from app.execution.position_monitor import PositionMonitor
+from app.db.repository import TradingRepository
 
 setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
-    from app.core.logging import logger
     logger.info("Initializing trading bot v2 system components...")
     
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
     binance = await get_binance()
-    logger.info("Binance AsyncClient connected.")
+    risk_engine = await get_risk_engine()
+    notifier = await get_notifier()
+    ws_manager = await get_ws_manager()
+    regime_engine = await get_regime_engine()
+    strategy_router = await get_strategy_router()
     
-    from app.db.session import AsyncSessionLocal
-    async with AsyncSessionLocal() as session:
-        repo = await get_repository(session)
-        risk = await get_risk_engine()
-        bot_loop_task = TradingBotLoop(binance, repo, risk)
-        setattr(get_trade_manager, "_singleton", bot_loop_task.trade_manager)
+    candle_store = CandleStore()
+    repo = TradingRepository(None)
+    trade_manager = TradeManager(binance, repo)
+    position_monitor = PositionMonitor(binance, on_trigger=trade_manager.close_position)
     
-    bg_task = asyncio.create_task(bot_loop_task.start(), name="TradingBotMainLoop")
-    logger.info("Background trading task spawned.")
+    logger.info("Bot components initialized. Starting main loop task...")
+    
+    bot_task = asyncio.create_task(
+        run_bot_loop(
+            ws_manager=ws_manager,
+            candle_store=candle_store,
+            regime_engine=regime_engine,
+            strategy_router=strategy_router,
+            risk_engine=risk_engine,
+            trade_manager=trade_manager,
+            position_monitor=position_monitor,
+            notifier=notifier,
+            session_factory=AsyncSessionLocal,
+        ),
+        name="TradingBotMainLoop"
+    )
+    
     yield
+    
     logger.info("Shutting down trading bot system...")
-    bg_task.cancel()
+    bot_task.cancel()
     try:
-        await bg_task
+        await bot_task
     except asyncio.CancelledError:
-        logger.info("Background bot task cancelled successfully.")
+        pass
         
-    await binance.disconnect()
+    await binance.close()
     await engine.dispose()
     logger.info("Database and API connections closed.")
 
@@ -58,7 +85,6 @@ app = FastAPI(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    from app.core.logging import logger
     logger.error(f"Global unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,

@@ -10,8 +10,13 @@ from app.execution.trade_manager import TradeManager
 from app.db.repository import TradingRepository
 from app.core.config import settings
 
+from app.notifications.telegram import TelegramNotifier
+from app.data.ws_manager import WebSocketManager
+
 _redis: Optional[Redis] = None
 _binance_client: Optional[BinanceSpotClient] = None
+_notifier: Optional[TelegramNotifier] = None
+_ws_manager: Optional[WebSocketManager] = None
 _regime_engine: Optional[MarketRegimeEngine] = None
 _strategy_router: Optional[StrategyRouter] = None
 _risk_engine: Optional[RiskEngine] = None
@@ -57,6 +62,21 @@ async def get_risk_engine() -> RiskEngine:
     if _risk_engine is None:
         _risk_engine = RiskEngine()
     return _risk_engine
+
+async def get_notifier() -> TelegramNotifier:
+    global _notifier
+    if _notifier is None:
+        _notifier = TelegramNotifier()
+    return _notifier
+
+async def get_ws_manager() -> WebSocketManager:
+    global _ws_manager
+    if _ws_manager is None:
+        binance = await get_binance()
+        notifier = await get_notifier()
+        risk_engine = await get_risk_engine()
+        _ws_manager = WebSocketManager(binance, notifier, risk_engine)
+    return _ws_manager
 
 async def get_repository(db: AsyncSession) -> TradingRepository:
     return TradingRepository(db)
