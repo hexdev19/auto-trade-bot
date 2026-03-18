@@ -1,0 +1,48 @@
+services:
+  app:
+    build: .
+    restart: always
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - bot_net
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bot_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bot_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-trading_bot}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bot_user -d trading_bot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bot_net
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bot_net
+
+networks:
+  bot_net:
+    driver: bridge
+
+volumes:
+  postgres_data:

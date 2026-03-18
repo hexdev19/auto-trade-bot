@@ -1,17 +1,13 @@
-# Python
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 
-# Virtual environment
 myenv/
 venv/
 .env/
 
-# Environment variables
 .env
 
-# IDE/editor settings
 .vscode/
 .idea/
