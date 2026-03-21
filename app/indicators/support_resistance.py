@@ -1,3 +1,4 @@
+import decimal
 import numpy as np
 from typing import List, Tuple
 from dataclasses import dataclass
@@ -37,14 +38,14 @@ def find_levels(candles: List[Candle], lookback: int = 20, bins: int = 10) -> SR
     resistance = min(resistances, key=lambda x: x[1]) if resistances else (current_price * 1.05, 0.)
     
     return SRLevels(
-        support=Decimal(str(support[0])),
-        resistance=Decimal(str(resistance[0])),
+        support=decimal.Decimal(str(support[0])),
+        resistance=decimal.Decimal(str(resistance[0])),
         support_strength=float(support[1]),
         resistance_strength=float(resistance[1])
     )
 
-def is_near_support(price: Decimal, levels: SRLevels, tolerance_pct: Decimal = Decimal("0.002")) -> bool:
+def is_near_support(price: Decimal, levels: SRLevels, tolerance_pct: Decimal = decimal.Decimal("0.002")) -> bool:
     return abs(price - levels.support) / price <= tolerance_pct
 
-def is_near_resistance(price: Decimal, levels: SRLevels, tolerance_pct: Decimal = Decimal("0.002")) -> bool:
+def is_near_resistance(price: Decimal, levels: SRLevels, tolerance_pct: Decimal = decimal.Decimal("0.002")) -> bool:
     return abs(price - levels.resistance) / price <= tolerance_pct

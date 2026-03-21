@@ -15,8 +15,7 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
-class Base(DeclarativeBase):
-    pass
+from app.models.base import Base
 
 async def get_db():
     async with AsyncSessionLocal() as session:

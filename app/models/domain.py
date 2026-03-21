@@ -1,3 +1,4 @@
+import decimal
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
@@ -8,6 +9,7 @@ class MarketRegime(str, Enum):
     TRENDING = "TRENDING"
     SIDEWAYS = "SIDEWAYS"
     HIGH_VOLATILITY = "HIGH_VOLATILITY"
+    UNKNOWN = "UNKNOWN"
 
 class TradingSide(str, Enum):
     BUY = "BUY"
@@ -31,6 +33,8 @@ class TradeSignal:
     confidence: float
     regime: MarketRegime
     indicators: Dict[str, Any]
+    take_profit: Optional[Decimal] = None
+    stop_loss: Optional[Decimal] = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
 
 @dataclass
@@ -42,7 +46,7 @@ class OpenPosition:
     quantity: Decimal
     take_profit: Decimal
     stop_loss: Decimal
-    entry_atr: Decimal = Decimal('0')
+    entry_atr: Decimal = decimal.Decimal('0')
     breakeven_moved: bool = False
     opened_at: datetime = field(default_factory=datetime.utcnow)
     is_open: bool = True

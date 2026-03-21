@@ -1,3 +1,4 @@
+import decimal
 import asyncio
 from decimal import Decimal
 from typing import Dict, Any, List, Optional
@@ -38,9 +39,9 @@ class BinanceSpotClient:
             if not info: raise ValueError(f"Invalid symbol: {symbol}")
             filters = {f['filterType']: f for f in info['filters']}
             self._symbol_cache[symbol] = {
-                "step_size": Decimal(filters['LOT_SIZE']['stepSize']),
-                "min_notional": Decimal(filters['NOTIONAL']['minNotional']),
-                "tick_size": Decimal(filters['PRICE_FILTER']['tickSize'])
+                "step_size": decimal.Decimal(filters['LOT_SIZE']['stepSize']),
+                "min_notional": decimal.Decimal(filters['NOTIONAL']['minNotional']),
+                "tick_size": decimal.Decimal(filters['PRICE_FILTER']['tickSize'])
             }
         return self._symbol_cache[symbol]
 
@@ -76,22 +77,38 @@ class BinanceSpotClient:
                     raise
         return {}
 
-    async def place_market_buy(self, symbol: str, quantity: Decimal) -> Dict[str, Any]:
+    async def place_market_order(self, symbol: str, side: TradingSide, quantity: decimal.Decimal) -> Dict[str, Any]:
+        if side == TradingSide.BUY:
+            return await self.place_market_buy(symbol, quantity)
+        else:
+            return await self.place_market_sell(symbol, quantity)
+
+    async def place_market_buy(self, symbol: str, quantity: decimal.Decimal) -> Dict[str, Any]:
         return await self._place_order(symbol, "BUY", quantity)
 
-    async def place_market_sell(self, symbol: str, quantity: Decimal) -> Dict[str, Any]:
+    async def place_market_sell(self, symbol: str, quantity: decimal.Decimal) -> Dict[str, Any]:
         return await self._place_order(symbol, "SELL", quantity)
 
-    async def get_asset_balance(self, asset: str) -> Decimal:
-        balance = await self._client.get_asset_balance(asset=asset)
-        return Decimal(balance["free"]) if balance else Decimal("0")
+    async def get_balance(self, asset: str) -> decimal.Decimal:
+        if not self._client: return decimal.Decimal('0')
+        res = await self._client.get_asset_balance(asset=asset)
+        return decimal.Decimal(str(res['free'])) if res else decimal.Decimal('0')
 
-    async def get_account_balance(self, asset: str = "USDT") -> Decimal:
+    async def get_price(self, symbol: str) -> decimal.Decimal:
+        if not self._client: return decimal.Decimal('0')
+        res = await self._client.get_symbol_ticker(symbol=symbol)
+        return decimal.Decimal(str(res['price'])) if res else decimal.Decimal('0')
+
+    async def get_asset_balance(self, asset: str) -> decimal.Decimal:
+        balance = await self._client.get_asset_balance(asset=asset)
+        return decimal.Decimal(balance["free"]) if balance else decimal.Decimal("0")
+
+    async def get_account_balance(self, asset: str = "USDT") -> decimal.Decimal:
         return await self.get_asset_balance(asset)
 
-    async def get_current_price(self, symbol: str) -> Decimal:
+    async def get_current_price(self, symbol: str) -> decimal.Decimal:
         ticker = await self._client.get_symbol_ticker(symbol=symbol)
-        return Decimal(ticker["price"])
+        return decimal.Decimal(ticker["price"])
 
     async def get_klines(self, symbol: str, interval: str, limit: int = 100) -> List[Candle]:
         from datetime import datetime
@@ -100,10 +117,10 @@ class BinanceSpotClient:
             Candle(
                 symbol=symbol,
                 timestamp=datetime.fromtimestamp(k[0] / 1000),
-                open=Decimal(str(k[1])),
-                high=Decimal(str(k[2])),
-                low=Decimal(str(k[3])),
-                close=Decimal(str(k[4])),
-                volume=Decimal(str(k[5]))
+                open=decimal.Decimal(str(k[1])),
+                high=decimal.Decimal(str(k[2])),
+                low=decimal.Decimal(str(k[3])),
+                close=decimal.Decimal(str(k[4])),
+                volume=decimal.Decimal(str(k[5]))
             ) for k in klines
         ]

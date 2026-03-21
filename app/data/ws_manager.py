@@ -1,3 +1,4 @@
+import decimal
 import asyncio
 from decimal import Decimal
 from datetime import datetime, timezone
@@ -17,13 +18,13 @@ class OrderBookStore:
         self.asks: List[List[Decimal]] = []
 
     def update(self, bids: List, asks: List):
-        self.bids = [[Decimal(str(p)), Decimal(str(q))] for p, q in bids]
-        self.asks = [[Decimal(str(p)), Decimal(str(q))] for p, q in asks]
+        self.bids = [[decimal.Decimal(str(p)), decimal.Decimal(str(q))] for p, q in bids]
+        self.asks = [[decimal.Decimal(str(p)), decimal.Decimal(str(q))] for p, q in asks]
 
     def get_depth_imbalance(self) -> Decimal:
         bid_vol = sum(q for _, q in self.bids)
         ask_vol = sum(q for _, q in self.asks)
-        return bid_vol / ask_vol if ask_vol > 0 else Decimal('1')
+        return bid_vol / ask_vol if ask_vol > 0 else decimal.Decimal('1')
 
 class WebSocketManager:
     def __init__(self, binance_client: BinanceSpotClient, notifier: TelegramNotifier, risk_engine: RiskEngine):
@@ -57,15 +58,15 @@ class WebSocketManager:
                             candle = Candle(
                                 symbol=symbol,
                                 timestamp=datetime.fromtimestamp(k['t'] / 1000, tz=timezone.utc),
-                                open=Decimal(k['o']),
-                                high=Decimal(k['h']),
-                                low=Decimal(k['l']),
-                                close=Decimal(k['c']),
-                                volume=Decimal(k['v'])
+                                open=decimal.Decimal(k['o']),
+                                high=decimal.Decimal(k['h']),
+                                low=decimal.Decimal(k['l']),
+                                close=decimal.Decimal(k['c']),
+                                volume=decimal.Decimal(k['v'])
                             )
                             await self.candle_queues[f"{symbol}_{interval}"].put(candle)
                         if interval == "1m":
-                            await self.price_queue.put(Decimal(k['c']))
+                            await self.price_queue.put(decimal.Decimal(k['c']))
             except Exception as e:
                 logger.error(f"WS Kline error {symbol} {interval}: {e}")
                 retries += 1

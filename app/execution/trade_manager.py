@@ -1,6 +1,6 @@
 import asyncio
+import decimal
 from typing import Dict, Optional, List
-from decimal import Decimal
 from datetime import datetime
 from app.execution.binance_client import BinanceSpotClient
 from app.db.repository import TradingRepository
@@ -31,7 +31,7 @@ class TradeManager:
                 else:
                     order = await self.binance_client.place_market_sell(symbol, risk.max_quantity)
                 
-                entry_price = Decimal(str(order["fills"][0]["price"]))
+                entry_price = decimal.Decimal(str(order["fills"][0]["price"]))
                 pos = OpenPosition(
                     id=order["clientOrderId"],
                     symbol=symbol,
@@ -39,8 +39,8 @@ class TradeManager:
                     entry_price=entry_price,
                     quantity=risk.max_quantity,
                     stop_loss=risk.adjusted_sl,
-                    take_profit=risk.adjusted_tp,
-                    entry_atr=Decimal(str(signal.indicators.get("atr", 0)))
+                    take_profit=risk_decision.adjusted_tp, # Correcting risk_decision to risk if needed
+                    entry_atr=decimal.Decimal(str(signal.indicators.get("atr", 0)))
                 )
                 
                 trade_data = {
@@ -75,9 +75,9 @@ class TradeManager:
                 else:
                     order = await self.binance_client.place_market_buy(pos.symbol, pos.quantity)
                 
-                exit_price = Decimal(str(order["fills"][0]["price"]))
+                exit_price = decimal.Decimal(str(order["fills"][0]["price"]))
                 pnl = (exit_price - pos.entry_price) * pos.quantity if pos.side == TradingSide.BUY else (pos.entry_price - exit_price) * pos.quantity
-                pnl_pct = (pnl / (pos.entry_price * pos.quantity)) * 100 if pos.entry_price > 0 else Decimal('0')
+                pnl_pct = (pnl / (pos.entry_price * pos.quantity)) * 100 if pos.entry_price > 0 else decimal.Decimal('0')
                 
                 status_data = {
                     "exit_price": exit_price,

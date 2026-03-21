@@ -1,4 +1,5 @@
-from decimal import Decimal
+import decimal
+import decimal
 from typing import Optional
 from app.core.config import settings
 from app.core.logging import logger
@@ -6,19 +7,19 @@ from app.core.utils import quantize_decimal
 
 class PositionSizer:
     def __init__(self, risk_per_trade: float = 1.0, max_pos_size: float = 10.0):
-        self.risk_per_trade = Decimal(str(risk_per_trade / 100))
-        self.max_pos_size_percent = Decimal(str(max_pos_size / 100))
+        self.risk_per_trade = decimal.Decimal(str(risk_per_trade / 100))
+        self.max_pos_size_percent = decimal.Decimal(str(max_pos_size / 100))
 
     def calculate_quantity(
         self, 
         symbol: str, 
-        current_price: Decimal, 
-        equity: Decimal, 
-        atr: Optional[Decimal] = None,
-        step_size: Decimal = Decimal('0.00001')
-    ) -> Decimal:
+        current_price: decimal.Decimal, 
+        equity: decimal.Decimal, 
+        atr: Optional[decimal.Decimal] = None,
+        step_size: decimal.Decimal = decimal.Decimal('0.00001')
+    ) -> decimal.Decimal:
         if equity <= 0:
-            return Decimal('0')
+            return decimal.Decimal('0')
         risk_amount = equity * self.risk_per_trade
         if atr and atr > 0:
             stop_distance = 2 * atr

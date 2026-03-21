@@ -1,3 +1,4 @@
+import decimal
 import asyncio
 import functools
 import time
@@ -36,7 +37,7 @@ def retry_async(
 def to_decimal(value: Union[float, str, int, Decimal]) -> Decimal:
     if isinstance(value, Decimal):
         return value
-    return Decimal(str(value))
+    return decimal.Decimal(str(value))
 
 def format_decimal(value: Decimal, precision: int = 8) -> str:
     return f"{value:.{precision}f}"
@@ -48,8 +49,8 @@ def calculate_pnl(entry_price: Decimal, exit_price: Decimal, quantity: Decimal, 
         return (entry_price - exit_price) * quantity
 
 def calculate_pnl_percent(entry_price: Decimal, exit_price: Decimal, side: str = "BUY") -> Decimal:
-    if entry_price == Decimal('0'):
-        return Decimal('0')
+    if entry_price == decimal.Decimal('0'):
+        return decimal.Decimal('0')
     
     if side == "BUY":
         return ((exit_price - entry_price) / entry_price) * 100
@@ -63,4 +64,4 @@ def quantize_decimal(value: Decimal, step_size: Decimal) -> Decimal:
     else:
         precision = 0
         
-    return value.quantize(Decimal(str(10**-precision)), rounding=ROUND_DOWN)
+    return value.quantize(decimal.Decimal(str(10**-precision)), rounding=ROUND_DOWN)

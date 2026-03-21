@@ -1,3 +1,6 @@
+import decimal
+import numpy as np
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any, Tuple
 from app.models.domain import Candle, TradeSignal, MarketRegime, TradingSide
 from app.strategies.base import BaseStrategy
@@ -7,9 +10,6 @@ from app.indicators.bollinger import get_band_snapshot
 from app.indicators.support_resistance import find_levels, is_near_support, is_near_resistance
 from app.indicators.atr import get_current_atr
 from app.core.config import settings
-from decimal import Decimal
-import numpy as np
-from datetime import datetime, timedelta
 
 class ScalpingStrategy(BaseStrategy):
     def __init__(self):
@@ -29,13 +29,13 @@ class ScalpingStrategy(BaseStrategy):
         if regime != MarketRegime.SIDEWAYS:
             return None
         if orderbook:
-            bid = Decimal(str(orderbook.get("bid", 0)))
-            ask = Decimal(str(orderbook.get("ask", 0)))
+            bid = decimal.Decimal(str(orderbook.get("bid", 0)))
+            ask = decimal.Decimal(str(orderbook.get("ask", 0)))
             if ask > 0:
                 spread_pct = (ask - bid) / ask
-                if spread_pct >= Decimal('0.0005'): # 0.05%
+                if spread_pct >= decimal.Decimal('0.0005'): # 0.05%
                     return None
-        atr = Decimal(str(get_current_atr(candles_1m, self._config.ATR_PERIOD)))
+        atr = decimal.Decimal(str(get_current_atr(candles_1m, self._config.ATR_PERIOD)))
         
         now = datetime.utcnow()
         self._trade_history = [t for t in self._trade_history if now - t < timedelta(hours=1)]
@@ -57,9 +57,9 @@ class ScalpingStrategy(BaseStrategy):
                     price=current_price,
                     confidence=float(confidence),
                     regime=regime,
-                    take_profit=current_price + (atr * Decimal('1.2')),
-                    stop_loss=current_price - (atr * Decimal('0.8')),
-                    indicators={"strategy": self.name, "score": score}
+                    take_profit=current_price + (atr * decimal.Decimal('1.2')),
+                    stop_loss=current_price - (atr * decimal.Decimal('0.8')),
+                    indicators={"strategy": self.name, "score": score, "atr": float(atr)}
                 )
 
         if score < -0.15 and confidence >= 0.7:
@@ -71,15 +71,14 @@ class ScalpingStrategy(BaseStrategy):
                     price=current_price,
                     confidence=float(confidence),
                     regime=regime,
-                    take_profit=current_price - (atr * Decimal('1.2')),
-                    stop_loss=current_price + (atr * Decimal('0.8')),
-                    indicators={"strategy": self.name, "score": score}
+                    take_profit=current_price - (atr * decimal.Decimal('1.2')),
+                    stop_loss=current_price + (atr * decimal.Decimal('0.8')),
+                    indicators={"strategy": self.name, "score": score, "atr": float(atr)}
                 )
 
         return None
 
     def compute_composite_score(self, candles: List[Candle], sr_levels: Any, orderbook: Optional[Dict[str, Any]]) -> Tuple[float, float]:
-
         rsi = get_rsi(candles, 14)
         macd = get_macd_snapshot(candles)
         bb = get_band_snapshot(candles)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from datetime import datetime
 from typing import Dict, Any
-from app.core.dependencies import get_binance, get_regime_engine, get_trade_manager, get_risk_engine, get_strategy_router
+from app.api.v1.dependencies import get_risk_engine, get_regime_engine, get_strategy_router, get_binance, get_trade_manager
 from app.execution.binance_client import BinanceSpotClient
 from app.regime.engine import MarketRegimeEngine
 from app.execution.trade_manager import TradeManager

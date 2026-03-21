@@ -15,7 +15,7 @@ def setup_logging():
     )
     
     logger.add(
-        "logs/trading_bot.log", 
+        "logs/trading_bot.log",
         rotation="10 MB", 
         retention="1 week", 
         compression="zip", 
@@ -39,4 +39,4 @@ def setup_logging():
 
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
-setup_logging()
+# setup_logging()

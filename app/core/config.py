@@ -1,4 +1,4 @@
-from decimal import Decimal
+import decimal
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, SecretStr
@@ -16,17 +16,19 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
     REDIS_URL: str
+    API_KEY: Optional[SecretStr] = None
 
     TRADING_SYMBOL: str = "BTCUSDT"
+    SYMBOLS_TO_TRADE: List[str] = ["BTCUSDT"]
     DEFAULT_TIMEFRAME: str = "1m"
     SECONDARY_TIMEFRAME: str = "5m"
     COOLDOWN_MINUTES: int = 60
     
-    RISK_PER_TRADE_PCT: Decimal = Field(Decimal('0.01'), ge=Decimal('0.001'), le=Decimal('0.1'))
-    MAX_DAILY_LOSS_PCT: Decimal = Field(Decimal('0.05'), ge=Decimal('0.01'), le=Decimal('0.2'))
+    RISK_PER_TRADE_PCT: decimal.Decimal = Field(decimal.Decimal('0.01'), ge=decimal.Decimal('0.001'), le=decimal.Decimal('0.1'))
+    MAX_DAILY_LOSS_PCT: decimal.Decimal = Field(decimal.Decimal('0.05'), ge=decimal.Decimal('0.01'), le=decimal.Decimal('0.2'))
     MAX_CONSECUTIVE_LOSSES: int = 3
-    MAX_DRAWDOWN_PCT: Decimal = Field(Decimal('0.10'), ge=Decimal('0.01'), le=Decimal('0.5'))
-    MAX_POSITION_SIZE_USD: Decimal = Field(Decimal('500'), ge=Decimal('10'))
+    MAX_DRAWDOWN_PCT: decimal.Decimal = Field(decimal.Decimal('0.10'), ge=decimal.Decimal('0.01'), le=decimal.Decimal('0.5'))
+    MAX_POSITION_SIZE_USD: decimal.Decimal = Field(decimal.Decimal('500'), ge=decimal.Decimal('10'))
     
     ATR_PERIOD: int = 14
     EMA_FAST: int = 20

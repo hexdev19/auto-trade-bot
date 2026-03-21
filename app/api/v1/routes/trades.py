@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from typing import List, Dict, Any, Optional
-from app.core.dependencies import get_db, get_trade_manager, get_repository
+from app.api.v1.dependencies import get_binance, get_regime_engine, get_risk_engine, get_strategy_router, get_repository, get_trade_manager
 from app.db.repository import TradingRepository
 from app.execution.trade_manager import TradeManager
 from app.models.schemas import OrderResponse, TradeStatsResponse

@@ -8,20 +8,22 @@ from datetime import datetime
 from app.core.config import settings
 from app.core.logging import setup_logging, logger
 from app.api.v1.routes import bot, trades, health
-from app.db.session import engine, Base, AsyncSessionLocal
-from app.core.dependencies import (
+from app.db.session import engine, AsyncSessionLocal
+from app.models.base import Base
+from app.api.v1.dependencies import (
     get_binance,
     get_risk_engine,
     get_notifier,
-    get_ws_manager,
     get_regime_engine,
-    get_strategy_router
+    get_strategy_router,
+    get_repository
 )
 from app.tasks.bot_loop import run_bot_loop
 from app.data.candle_store import CandleStore
 from app.execution.trade_manager import TradeManager
 from app.execution.position_monitor import PositionMonitor
 from app.db.repository import TradingRepository
+from app.di.container import get_container
 
 setup_logging()
 
@@ -29,20 +31,18 @@ setup_logging()
 async def lifespan(app: FastAPI):
     logger.info("Initializing trading bot v2 system components...")
     
+    container = await get_container()
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    binance = await get_binance()
-    risk_engine = await get_risk_engine()
-    notifier = await get_notifier()
-    ws_manager = await get_ws_manager()
-    regime_engine = await get_regime_engine()
-    strategy_router = await get_strategy_router()
+    # Initialize services that need connection
+    if container.binance_client:
+        await container.binance_client.connect()
     
-    candle_store = CandleStore()
-    repo = TradingRepository(None)
-    trade_manager = TradeManager(binance, repo, notifier)
-    position_monitor = PositionMonitor(binance, on_trigger=trade_manager.close_position)
+    # Start background tasks
+    if container.position_monitor:
+        await container.position_monitor.start()
     
     logger.info("Bot components initialized. Starting main loop task...")
     

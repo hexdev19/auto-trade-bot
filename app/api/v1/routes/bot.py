@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import Dict, Any, Optional
-from app.core.dependencies import get_trade_manager, get_risk_engine, get_regime_engine, get_strategy_router, get_binance
+from app.api.v1.dependencies import get_risk_engine, get_regime_engine, get_strategy_router, get_binance, get_trade_manager
 from app.execution.trade_manager import TradeManager
 from app.risk.engine import RiskEngine
 from app.regime.engine import MarketRegimeEngine

@@ -1,28 +1,28 @@
 import numpy as np
+import decimal
 from dataclasses import dataclass
 from typing import List, Dict, Any
-from decimal import Decimal
 from datetime import datetime
 from app.models.domain import ClosedTrade
 
 @dataclass
 class BacktestMetrics:
-    total_return_pct: Decimal
-    win_rate: Decimal
-    profit_factor: Decimal
-    max_drawdown_pct: Decimal
+    total_return_pct: decimal.Decimal
+    win_rate: decimal.Decimal
+    profit_factor: decimal.Decimal
+    max_drawdown_pct: decimal.Decimal
     sharpe_ratio: float
     sortino_ratio: float
-    avg_win: Decimal
-    avg_loss: Decimal
+    avg_win: decimal.Decimal
+    avg_loss: decimal.Decimal
     total_trades: int
     trades_by_strategy: Dict[str, Any]
     regime_distribution: Dict[str, float]
-    regime_pnl: Dict[str, Decimal]
+    regime_pnl: Dict[str, decimal.Decimal]
 
-def calculate_metrics(trades: List[ClosedTrade], initial_balance: Decimal, final_balance: Decimal) -> BacktestMetrics:
+def calculate_metrics(trades: List[ClosedTrade], initial_balance: decimal.Decimal, final_balance: decimal.Decimal) -> BacktestMetrics:
     if not trades:
-        return BacktestMetrics(Decimal('0'), Decimal('0'), Decimal('0'), Decimal('0'), 0.0, 0.0, Decimal('0'), Decimal('0'), 0, {}, {}, {})
+        return BacktestMetrics(decimal.Decimal('0'), decimal.Decimal('0'), decimal.Decimal('0'), decimal.Decimal('0'), 0.0, 0.0, decimal.Decimal('0'), decimal.Decimal('0'), 0, {}, {}, {})
 
     pnls = [t.pnl for t in trades]
     wins = [p for p in pnls if p > 0]
@@ -30,7 +30,7 @@ def calculate_metrics(trades: List[ClosedTrade], initial_balance: Decimal, final
     
     total_return = ((final_balance - initial_balance) / initial_balance) * 100
     win_rate = (len(wins) / len(trades)) * 100
-    profit_factor = sum(wins) / abs(sum(losses)) if losses else Decimal('0')
+    profit_factor = sum(wins) / abs(sum(losses)) if losses else decimal.Decimal('0')
     
     cum_pnl = np.cumsum([float(p) for p in pnls])
     peak = np.maximum.accumulate(cum_pnl)
@@ -47,14 +47,14 @@ def calculate_metrics(trades: List[ClosedTrade], initial_balance: Decimal, final
     sortino = (avg_ret / std_neg) * np.sqrt(365) if std_neg > 0 else 0
     
     return BacktestMetrics(
-        total_return_pct=Decimal(str(total_return)),
-        win_rate=Decimal(str(win_rate)),
-        profit_factor=Decimal(str(profit_factor)),
-        max_drawdown_pct=Decimal(str(max_dd)),
+        total_return_pct=decimal.Decimal(str(total_return)),
+        win_rate=decimal.Decimal(str(win_rate)),
+        profit_factor=decimal.Decimal(str(profit_factor)),
+        max_drawdown_pct=decimal.Decimal(str(max_dd)),
         sharpe_ratio=float(sharpe),
         sortino_ratio=float(sortino),
-        avg_win=sum(wins) / len(wins) if wins else Decimal('0'),
-        avg_loss=sum(losses) / len(losses) if losses else Decimal('0'),
+        avg_win=sum(wins) / len(wins) if wins else decimal.Decimal('0'),
+        avg_loss=sum(losses) / len(losses) if losses else decimal.Decimal('0'),
         total_trades=len(trades),
         trades_by_strategy={},
         regime_distribution={},
